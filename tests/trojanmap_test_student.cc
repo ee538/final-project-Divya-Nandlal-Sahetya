@@ -79,7 +79,6 @@ TEST(TrojanMapStudentTest, FindPosition) {
   // Test The Sonshine Shop Thrift Store
   auto position = m.GetPosition("The Sonshine Shop Thrift Store");
   std::pair<double, double> gt1(34.0383026, -118.2917671);
-  std::cout<<position.second<<std::endl;
   EXPECT_EQ(position, gt1);
 
   // Test Newman Recital Hall in Hancock Foundation
@@ -117,22 +116,18 @@ TEST(TrojanMapTest, FindClosestName) {
   // Example 1
   // Test the same case
   std::string r1 = "Starbucks";
-  std::transform(r1.begin(), r1.end(), r1.begin(), ::tolower);
+  // std::transform(r1.begin(), r1.end(), r1.begin(), ::tolower);
   EXPECT_EQ(m.FindClosestName("Storbucks"), r1);
-
-  // Test the lower case
-  EXPECT_EQ(m.FindClosestName("storbucks"), r1);
-
-  // Test the upper case
-  EXPECT_EQ(m.FindClosestName("STORBUCKS"), r1);
+  EXPECT_EQ(m.FindClosestName("Stooooorbucks"), r1);
+  EXPECT_EQ(m.FindClosestName(" Storrrrrrrbucks"), r1);
 
   // Example 2
   std::string r2 = "Chevron";
-  std::transform(r2.begin(), r2.end(), r2.begin(), ::tolower);
+  // std::transform(r2.begin(), r2.end(), r2.begin(), ::tolower);
   EXPECT_EQ(m.FindClosestName("Chevrrron"), r2);
 
   // Example 3
   std::string r3 = "CAVA";
-  std::transform(r3.begin(), r3.end(), r3.begin(), ::tolower);
-  EXPECT_EQ(m.FindClosestName("cavas"), r3);
+  // std::transform(r3.begin(), r3.end(), r3.begin(), ::tolower);
+  EXPECT_EQ(m.FindClosestName("CAVAS"), r3);
 }
