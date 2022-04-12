@@ -10,7 +10,7 @@
  * @return {double}         : latitude
  */
 double TrojanMap::GetLat(const std::string& id) {
-    return 0;
+    return data[id].lat;
 }
 
 /**
@@ -20,7 +20,7 @@ double TrojanMap::GetLat(const std::string& id) {
  * @return {double}         : longitude
  */
 double TrojanMap::GetLon(const std::string& id) { 
-    return 0;
+    return data[id].lon;
 }
 
 /**
@@ -62,7 +62,14 @@ std::string TrojanMap::GetID(const std::string& name) {
  * @return {std::pair<double,double>}  : (lat, lon)
  */
 std::pair<double, double> TrojanMap::GetPosition(std::string name) {
-  std::pair<double, double> results(-1, -1);
+  std::pair<double, double> results(-1, -1); // location doesn't exisit
+  for (auto id : data) { //for each original name in database
+    if (name == id.second.name) { //check if the input name is in the database
+      results.first = GetLat(id.first);//Insert Latitude as first param
+      results.second = GetLon(id.first);//Insert Longitude as second param
+      break;
+    }
+  }
   return results;
 }
 
@@ -72,7 +79,30 @@ std::pair<double, double> TrojanMap::GetPosition(std::string name) {
  * 
  */
 int TrojanMap::CalculateEditDistance(std::string a, std::string b){
-    return 0;
+  int len1 = a.size();
+  int len2 = b.size();
+
+  int DP[2][len1 + 1];
+
+  memset(DP, 0, sizeof DP);
+
+  for (int i = 0; i <= len1; i++){
+    DP[0][i] = i;
+  }
+
+  for (int i = 1; i <= len2; i++) {
+      for (int j = 0; j <= len1; j++) {
+          if (j == 0)
+              DP[i % 2][j] = i;
+          else if (a[j - 1] == b[i - 1]) {
+              DP[i % 2][j] = DP[(i - 1) % 2][j - 1];
+          }
+          else {
+              DP[i % 2][j] = 1 + std::min(DP[(i - 1) % 2][j],std::min(DP[i % 2][j - 1],DP[(i - 1) % 2][j - 1]));
+          }
+      }
+  }
+  return DP[len2 % 2][len1];
 }
 
 /**
@@ -82,7 +112,22 @@ int TrojanMap::CalculateEditDistance(std::string a, std::string b){
  * @return {std::string} tmp           : similar name
  */
 std::string TrojanMap::FindClosestName(std::string name) {
-  std::string tmp = "";
+  std::string tmp = "";  
+  bool found= false;
+  int min_dis = INT_MAX;
+  
+  for (auto it = data.begin(); it != data.end() && !found; ++it)
+  {
+    std::string currStr = it->second.name;
+    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    std::transform(currStr.begin(), currStr.end(), currStr.begin(), ::tolower);
+
+    if (TrojanMap::CalculateEditDistance(name, currStr) <= min_dis)
+    { //check if input name matches currentMap name
+      tmp = currStr;
+      min_dis = TrojanMap::CalculateEditDistance(name, currStr);
+    }
+  }
   return tmp;
 }
 
@@ -96,6 +141,15 @@ std::string TrojanMap::FindClosestName(std::string name) {
  */
 std::vector<std::string> TrojanMap::Autocomplete(std::string name){
   std::vector<std::string> results;
+  std::string ids;
+  std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+  for (auto id : data) {
+  ids = id.second.name;
+  std::transform(ids.begin(), ids.end(), ids.begin(), ::tolower);
+    if (name == ids.substr(0, name.size())) {
+      results.push_back(id.second.name);
+    }
+  }
   return results;
 }
 
