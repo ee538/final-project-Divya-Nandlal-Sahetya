@@ -63,6 +63,9 @@ std::string TrojanMap::GetID(const std::string& name) {
  */
 std::pair<double, double> TrojanMap::GetPosition(std::string name) {
   std::pair<double, double> results(-1, -1);
+  if(name == "") { //if empty name then return empty 
+    return results;
+  }
   for (auto id : data) {
     if (name == id.second.name) {
       results.first = GetLat(id.first);

@@ -116,18 +116,19 @@ TEST(TrojanMapTest, FindClosestName) {
   // Example 1
   // Test the same case
   std::string r1 = "Starbucks";
-  // std::transform(r1.begin(), r1.end(), r1.begin(), ::tolower);
   EXPECT_EQ(m.FindClosestName("Storbucks"), r1);
   EXPECT_EQ(m.FindClosestName("Stooooorbucks"), r1);
   EXPECT_EQ(m.FindClosestName(" Storrrrrrrbucks"), r1);
 
   // Example 2
   std::string r2 = "Chevron";
-  // std::transform(r2.begin(), r2.end(), r2.begin(), ::tolower);
   EXPECT_EQ(m.FindClosestName("Chevrrron"), r2);
 
   // Example 3
   std::string r3 = "CAVA";
-  // std::transform(r3.begin(), r3.end(), r3.begin(), ::tolower);
   EXPECT_EQ(m.FindClosestName("CAVAS"), r3);
+
+  // Example 4
+  std::string r4 = "Just Ride LA";
+  EXPECT_EQ(m.FindClosestName("JustRideLA"), r4);
 }
