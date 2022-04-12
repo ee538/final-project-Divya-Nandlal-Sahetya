@@ -177,6 +177,30 @@ Chevron
 Time taken by function: 2 ms
 ```
 
+Result:
+
+```shell
+**************************************************************
+* 1. Autocomplete                                             
+**************************************************************
+
+Please input a partial location:Ch
+*************************Results******************************
+Chinese Street Food
+Chase
+Chevron 2
+Chucks Chicken & Waffles
+Cheebos Burger
+Chick-fil-A
+Chevron 1
+Church of Christ
+Chipotle
+Chase Plaza Heliport
+Chevron
+**************************************************************
+Time taken by function: 13 ms
+```
+
 ## Step 2-1: Find the place's Coordinates in the Map
 
 ```c++
@@ -200,6 +224,20 @@ Please input a location:Target
 Latitude: 34.0257 Longitude: -118.284
 **************************************************************
 Time taken by function: 1 ms
+```
+
+Result:
+
+```shell
+**************************************************************
+* 2. Find the location                                        
+**************************************************************
+
+Please input a location:Target
+*************************Results******************************
+Latitude: 34.0257 Longitude: -118.284
+**************************************************************
+Time taken by function: 9 ms
 ```
 
 <p align="center"><img src="img/Target.png" alt="Target" width="500"/></p>
@@ -245,6 +283,21 @@ Did you mean Ralphs instead of Rolphs? [y/n]y
 Latitude: 34.0318 Longitude: -118.291
 **************************************************************
 Time taken by function: 2 ms
+```
+
+Result:
+```shell
+**************************************************************
+* 2. Find the location                                        
+**************************************************************
+
+Please input a location:Rolphs
+*************************Results******************************
+No matched locations.
+Did you mean Ralphs instead of Rolphs? [y/n]y
+Latitude: 34.0318 Longitude: -118.291
+**************************************************************
+Time taken by function: 14 ms
 ```
 
 ## Step 3: CalculateShortestPath between two places
