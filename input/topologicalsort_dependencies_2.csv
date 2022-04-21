@@ -1,0 +1,10 @@
+Source, Destination
+Shell,Target
+Shell,Starbucks
+Shell,Ralphs
+Target,Ralphs
+Starbucks,Ralphs
+Target,Chick-fil-A
+Ralphs,Chick-fil-A
+Chick-fil-A,KFC
+Chick-fil-A,Chipotle
