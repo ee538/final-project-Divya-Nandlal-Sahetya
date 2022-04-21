@@ -125,7 +125,14 @@ class TrojanMap {
   std::vector<std::string> FindNearby(std::string, std::string, double, int);
   
   //----------------------------------------------------- User-defined functions
+  void TopologicalSort(std::string &location,
+                        std::unordered_map<std::string, std::vector<std::string>> &dependency_map,
+                        std::unordered_map<std::string, bool> &visited,
+                        std::vector<std::string> &result);
 
+  bool hasCycle(std::string current_id, std::map<std::string, bool> &visited, std::string parent_id, std::vector<double> &square, std::map<std::string, std::string>& predecessor);
+
+  std::vector<std::string> CycleDetectionPaths(std::vector<std::string> &subgraph, std::vector<double> &square);
 };
 
 #endif

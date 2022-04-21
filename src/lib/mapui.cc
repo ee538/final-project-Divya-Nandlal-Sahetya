@@ -268,8 +268,17 @@ void MapUI::PrintMenu() {
     
     auto start = std::chrono::high_resolution_clock::now();
     auto results = map.CycleDetection(subgraph, square);
+
+    // Plot for Cycle detection
+    if(results == true)
+    {
+      std::vector<std::string> cycle_path = map.CycleDetectionPaths(subgraph, square);
+      PlotPath(cycle_path); 
+    }
+
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
     menu = "*************************Results******************************\n";
     std::cout << menu;
     if (results == true)

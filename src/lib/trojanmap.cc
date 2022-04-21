@@ -1,4 +1,5 @@
 #include "trojanmap.h"
+#include <iostream>
 
 //-----------------------------------------------------
 // TODO: Student should implement the following:
@@ -30,7 +31,12 @@ double TrojanMap::GetLon(const std::string& id) {
  * @return {std::string}    : name
  */
 std::string TrojanMap::GetName(const std::string& id) { 
-    return "";
+  if (data.find(id) == data.end()) {
+    return "NULL";
+  }
+  else {
+    return data[id].name;
+  }
 }
 
 /**
@@ -40,7 +46,12 @@ std::string TrojanMap::GetName(const std::string& id) {
  * @return {std::vector<std::string>}  : neighbor ids
  */
 std::vector<std::string> TrojanMap::GetNeighborIDs(const std::string& id) {
-    return {};
+  if (data.find(id) == data.end()) {
+    return std::vector <std::string>();
+  }
+  else {
+    return data[id].neighbors;
+  }
 }
 
 /**
@@ -52,6 +63,12 @@ std::vector<std::string> TrojanMap::GetNeighborIDs(const std::string& id) {
  */
 std::string TrojanMap::GetID(const std::string& name) {
   std::string res = "";
+  for (auto &it : data) {
+    if (it.second.name == name) {
+      res = it.first;
+      break;
+    }
+  }
   return res;
 }
 
@@ -198,9 +215,70 @@ double TrojanMap::CalculatePathLength(const std::vector<std::string> &path) {
  * @param  {std::string} location2_name     : goal
  * @return {std::vector<std::string>}       : path
  */
-std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
-    std::string location1_name, std::string location2_name) {
+std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(std::string location1_name, std::string location2_name) {
   std::vector<std::string> path;
+
+  std::unordered_map<std::string, double> distance;
+  std::unordered_map<std::string, std::string> predecessor;
+  std::unordered_map<std::string, bool> visited;
+
+  for (auto node : data) {
+    distance[node.first] = INT_MAX;
+  }
+
+  for (auto node : data) {
+    visited[node.first] = false;
+  }
+
+  std::string location1_id = GetID(location1_name);
+  std::string location2_id = GetID(location2_name);
+
+  if (location1_id == location2_id) {
+    return path;
+  }
+
+  std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>, 
+                      std::greater<std::pair<double, std::string>>> pq;
+
+  pq.push(std::make_pair(0, location1_id));
+
+  distance[location1_id] = 0;
+
+  while (!pq.empty()) {
+    std::string current_id = pq.top().second;
+    pq.pop();
+    if (current_id == location2_id) {
+      break;
+    }
+
+    if (visited[current_id]) {
+      continue;
+    }
+
+    visited[current_id] = true;
+
+    std::vector<std::string> neighbors = GetNeighborIDs(current_id);
+
+    for (auto neighbor : neighbors) {
+      double distance_to_neighbor = CalculateDistance(current_id, neighbor);
+
+      if (distance[current_id] + distance_to_neighbor < distance[neighbor]) {
+        distance[neighbor] = distance[current_id] + distance_to_neighbor;
+        predecessor[neighbor] = current_id;
+        pq.push(std::make_pair(distance[neighbor], neighbor));
+      }
+    }
+  }
+
+  std::string current_id = location2_id;
+  while (current_id != location1_id) {
+    path.push_back(current_id);
+    current_id = predecessor[current_id];
+  }
+
+  path.push_back(location1_id);
+  
+  std::reverse(path.begin(), path.end());
   return path;
 }
 
@@ -214,7 +292,52 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(
  */
 std::vector<std::string> TrojanMap::CalculateShortestPath_Bellman_Ford(
     std::string location1_name, std::string location2_name){
+
   std::vector<std::string> path;
+  std::unordered_map<std::string, double> distance;
+  std::unordered_map<std::string, std::string> predecessor;
+  for (auto node : data) {
+    distance[node.first] = INT_MAX;
+  }
+  std::string location1_id = GetID(location1_name);
+  std::string location2_id = GetID(location2_name);
+
+  
+  if (location1_id == location2_id) {
+    return path;
+  }
+
+  distance[location1_id] = 0;
+  int iterations = data.size()-1;
+  std::string current_id = location1_id;
+  bool done = true;
+
+  for (int i = 0; i < iterations; i++) {
+    done = true;
+    for (auto node: data) {
+      std::vector<std::string> neighbors = GetNeighborIDs(node.first);
+      for (auto neighbor: neighbors) {
+        double distance_to_neighbor = CalculateDistance(node.first, neighbor);
+        if (distance[node.first] + distance_to_neighbor < distance[neighbor]) {
+          distance[neighbor] = distance[node.first] + distance_to_neighbor;
+          predecessor[neighbor] = node.first;
+          done = false;
+        }
+      }
+    }
+    if (done) {
+      break;
+    }
+  }
+
+  current_id = location2_id;
+  while (current_id != location1_id) {
+    path.push_back(current_id);
+    current_id = predecessor[current_id];
+    }
+
+  path.push_back(location1_id);  
+  std::reverse(path.begin(), path.end());
   return path;
 }
 
@@ -252,6 +375,25 @@ std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTr
  */
 std::vector<std::string> TrojanMap::ReadLocationsFromCSVFile(std::string locations_filename){
   std::vector<std::string> location_names_from_csv;
+  std::fstream f;
+  std::string line;
+
+  f.open(locations_filename, std::ios::in); // Open the file
+  if(!f.is_open()) // If the file is already open
+  {
+    std::cout<<"Couldn't open "<< locations_filename << std::endl;
+    return location_names_from_csv;
+  }
+  
+  getline(f, line); // Call getline to ignore the header
+
+  while(getline(f,line)) // Read the rest of the lines
+  {
+    line.erase(std::remove(line.begin(),line.end(),','), line.end());
+    if(line!="")
+      location_names_from_csv.push_back(line);
+  }
+  f.close();
   return location_names_from_csv;
 }
 
@@ -264,6 +406,27 @@ std::vector<std::string> TrojanMap::ReadLocationsFromCSVFile(std::string locatio
  */
 std::vector<std::vector<std::string>> TrojanMap::ReadDependenciesFromCSVFile(std::string dependencies_filename){
   std::vector<std::vector<std::string>> dependencies_from_csv;
+  std::fstream f;
+  std::string line;
+
+  f.open(dependencies_filename, std::ios::in);
+  if(!f.is_open())
+  {
+    std::cout<<"Couldn't open "<< dependencies_filename << std::endl;
+    return dependencies_from_csv;
+  }
+  
+  getline(f, line);
+  while (getline(f, line)) {
+    std::string firstpos , secondpos;
+    auto pos = line.find(',');
+    if(pos==-1 || pos==0 || pos==line.size()-1) continue;
+    firstpos = line.substr(0,pos);
+    secondpos = line.substr(pos+1);
+    secondpos.erase(std::remove(secondpos.begin(),secondpos.end(),','), secondpos.end());
+    dependencies_from_csv.push_back({firstpos,secondpos});
+  }
+  f.close();
   return dependencies_from_csv;
 }
 
@@ -278,7 +441,44 @@ std::vector<std::vector<std::string>> TrojanMap::ReadDependenciesFromCSVFile(std
 std::vector<std::string> TrojanMap::DeliveringTrojan(std::vector<std::string> &locations,
                                                      std::vector<std::vector<std::string>> &dependencies){
   std::vector<std::string> result;
-  return result;                                                     
+  std::unordered_map<std::string, bool> visited; // Map to store the visited nodes
+  std::unordered_map<std::string, std::vector<std::string>> dependency_map; // Map to store the dependencies
+  for(auto location: locations) {
+    std::vector<std::string> temp;
+    dependency_map[location] = temp;
+  }
+
+  for (auto location : locations) { // visited map is initialized
+    visited[location] = false;
+  }
+
+  for (auto &dependency : dependencies) { // Create edge map
+    dependency_map[dependency[0]].push_back(dependency[1]);
+  }
+
+  for (auto location : locations) { // topological sort helper function on unvisited nodes
+    if (!visited[location]) {
+      TopologicalSort(location, dependency_map, visited, result);
+    }
+  }
+  std::unique(result.begin(),result.end());
+  std::reverse(result.begin(), result.end());  // Reverse the result
+  return result;                                         
+}
+
+// Helper function for topological sort
+void TrojanMap::TopologicalSort(std::string &location,
+                                std::unordered_map<std::string, std::vector<std::string>> &dependency_map,
+                                std::unordered_map<std::string, bool> &visited,
+                                std::vector<std::string> &result) {
+  visited[location] = true; // dependency is visited
+  // Iterate through all the dependencies
+  for (auto &dependency : dependency_map[location]) {
+    if (!visited[dependency]) { // If the dependency is not visited
+      TopologicalSort(dependency, dependency_map, visited, result); // topological sort
+    }
+  }
+  result.push_back(location); // Add the location to the result
 }
 
 /**
@@ -289,7 +489,11 @@ std::vector<std::string> TrojanMap::DeliveringTrojan(std::vector<std::string> &l
  * @return {bool}                      : in square or not
  */
 bool TrojanMap::inSquare(std::string id, std::vector<double> &square) {
-  return false;
+  bool is_square = false;
+  if(data[id].lon>=square[0] && data[id].lon<=square[1] && data[id].lat<=square[2] && data[id].lat>=square[3]){
+    is_square = true;
+  }
+  return is_square;
 }
 
 /**
@@ -301,9 +505,49 @@ bool TrojanMap::inSquare(std::string id, std::vector<double> &square) {
 std::vector<std::string> TrojanMap::GetSubgraph(std::vector<double> &square) {
   // include all the nodes in subgraph
   std::vector<std::string> subgraph;
+
+  for(auto node:data){
+    if(inSquare(node.first,square)){
+      subgraph.push_back(node.first);
+    }
+  }
   return subgraph;
 }
 
+/**
+ * Has Cycle: Returns true if it has cycle
+ * 
+ * @param {std::string} current_id: current node id
+ * @param {std::string} parent_id: parent node id
+ * @param {std::vector<std::string>} subgraph: list of location ids in the square
+ * @param {std::vector<double>} square: four vertexes of the square area
+ * @param {std::map<std::string, std::string>} predecessor: predecessor of the current node
+ * @return {bool}: whether there is a cycle or not
+ */
+bool TrojanMap::hasCycle(std::string current_id, std::map<std::string, bool> &visited, std::string parent_id, std::vector<double> &square,std::map<std::string, std::string>& predecessor)
+{
+  visited[current_id] = true; // Mark the current node as visited
+  if(inSquare(current_id, square)) 
+  {
+    // Find all the vertices which are not visited and are adjacent to the current node
+    std::vector<std::string> neighbors = GetNeighborIDs(current_id);
+    for(auto neighbor: neighbors)
+    {
+      predecessor[neighbor] = current_id; // record current node as predecessor node of these neighbor nodes
+      if(!visited[neighbor] && inSquare(neighbor, square)) // If the neighbor is not visited, call the helper function recursively
+      {
+        if(hasCycle(neighbor, visited, current_id, square, predecessor))
+        {
+          return true;
+        }
+      }
+      else if(inSquare(neighbor, square) && visited[neighbor] && neighbor != parent_id) { // If neighbor is visited and is not parent of the current node, there is a cycle
+        return true;
+      }
+    }
+  }
+  return false;
+}
 /**
  * Cycle Detection: Given four points of the square-shape subgraph, return true if there
  * is a cycle path inside the square, false otherwise.
@@ -313,7 +557,65 @@ std::vector<std::string> TrojanMap::GetSubgraph(std::vector<double> &square) {
  * @return {bool}: whether there is a cycle or not
  */
 bool TrojanMap::CycleDetection(std::vector<std::string> &subgraph, std::vector<double> &square) {
+  bool cycleDetected = false;
+  std::map<std::string, bool> visited; //to hold if node is visited
+  std::map<std::string, std::string> predecessor; //to hold parent_ids
+  
+  //initialize with visited as false
+  for(auto id: subgraph)
+  {
+    visited[id] = false;
+  }
+
+  for(auto node: subgraph)
+  {
+    if(!visited[node]) //check only if node is not visited
+    {
+      if(hasCycle(node, visited, node, square, predecessor)) //check for cycle
+      {
+        return true;
+      }
+    }
+  }
   return false;
+}
+
+/**
+ * CycleDetectionPaths: To be called only if cycle is detected
+ * This function given four points of the square-shape subgraph, returns the cycle path if there
+ * is a cycle path inside the square.
+ * 
+ * @param {std::vector<std::string>} subgraph: list of location ids in the square
+ * @param {std::vector<double>} square: four vertexes of the square area
+ * @return {std::vector<std::string>}: cycle paths vector
+ */
+std::vector<std::string> TrojanMap::CycleDetectionPaths(std::vector<std::string> &subgraph, std::vector<double> &square) {
+  std::vector<std::string> paths;
+  std::map<std::string, bool> visited; //to hold if node is visited
+  std::map<std::string, std::string> predecessor; //to hold parent_ids
+  
+  //initialize with visited as false
+  for(auto id: subgraph)
+  {
+    visited[id] = false;
+  }
+
+  for(auto node: subgraph)
+  {
+    if(!visited[node]) //check only if node is not visited
+    {
+      if(hasCycle(node, visited, node, square, predecessor)) //check for cycle
+      {
+        predecessor[node] = node;
+        for(auto id: predecessor)
+        {
+          paths.push_back(id.second);
+        }
+        break;
+      }
+    }
+  }
+  return paths;
 }
 
 /**
