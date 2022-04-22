@@ -131,8 +131,6 @@ class TrojanMap {
                         std::vector<std::string> &result);
 
   bool hasCycle(std::string current_id, std::map<std::string, bool> &visited, std::string parent_id, std::vector<double> &square, std::map<std::string, std::string>& predecessor);
-
-  std::vector<std::string> CycleDetectionPaths(std::vector<std::string> &subgraph, std::vector<double> &square);
 };
 
 #endif

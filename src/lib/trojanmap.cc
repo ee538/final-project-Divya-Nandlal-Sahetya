@@ -580,43 +580,6 @@ bool TrojanMap::CycleDetection(std::vector<std::string> &subgraph, std::vector<d
   return false;
 }
 
-/**
- * CycleDetectionPaths: To be called only if cycle is detected
- * This function given four points of the square-shape subgraph, returns the cycle path if there
- * is a cycle path inside the square.
- * 
- * @param {std::vector<std::string>} subgraph: list of location ids in the square
- * @param {std::vector<double>} square: four vertexes of the square area
- * @return {std::vector<std::string>}: cycle paths vector
- */
-std::vector<std::string> TrojanMap::CycleDetectionPaths(std::vector<std::string> &subgraph, std::vector<double> &square) {
-  std::vector<std::string> paths;
-  std::map<std::string, bool> visited; //to hold if node is visited
-  std::map<std::string, std::string> predecessor; //to hold parent_ids
-  
-  //initialize with visited as false
-  for(auto id: subgraph)
-  {
-    visited[id] = false;
-  }
-
-  for(auto node: subgraph)
-  {
-    if(!visited[node]) //check only if node is not visited
-    {
-      if(hasCycle(node, visited, node, square, predecessor)) //check for cycle
-      {
-        predecessor[node] = node;
-        for(auto id: predecessor)
-        {
-          paths.push_back(id.second);
-        }
-        break;
-      }
-    }
-  }
-  return paths;
-}
 
 /**
  * FindNearby: Given a class name C, a location name L and a number r, 
