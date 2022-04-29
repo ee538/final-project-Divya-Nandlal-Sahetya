@@ -1,6 +1,9 @@
 #include "trojanmap.h"
+#include <string>
+#include <utility>
+#include <ctype.h>
 #include <iostream>
-
+#include <type_traits>
 //-----------------------------------------------------
 // TODO: Student should implement the following:
 //-----------------------------------------------------
@@ -218,47 +221,46 @@ double TrojanMap::CalculatePathLength(const std::vector<std::string> &path) {
 std::vector<std::string> TrojanMap::CalculateShortestPath_Dijkstra(std::string location1_name, std::string location2_name) {
   std::vector<std::string> path;
 
-  std::unordered_map<std::string, double> distance;
+  std::unordered_map<std::string, double> distance; 
   std::unordered_map<std::string, std::string> predecessor;
   std::unordered_map<std::string, bool> visited;
 
-  for (auto node : data) {
+  for (auto node : data) { 
     distance[node.first] = INT_MAX;
   }
 
-  for (auto node : data) {
+  for (auto node : data) { 
     visited[node.first] = false;
   }
 
-  std::string location1_id = GetID(location1_name);
-  std::string location2_id = GetID(location2_name);
+  std::string location1_id = GetID(location1_name); 
+  std::string location2_id = GetID(location2_name); 
 
-  if (location1_id == location2_id) {
+  if (location1_id == location2_id) { 
     return path;
   }
 
-  std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>, 
-                      std::greater<std::pair<double, std::string>>> pq;
+  std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>, std::greater<std::pair<double, std::string>>> pq; 
 
-  pq.push(std::make_pair(0, location1_id));
+  pq.push(std::make_pair(0, location1_id)); 
 
-  distance[location1_id] = 0;
+  distance[location1_id] = 0; 
 
   while (!pq.empty()) {
-    std::string current_id = pq.top().second;
+    std::string current_id = pq.top().second; 
     pq.pop();
-    if (current_id == location2_id) {
+    if (current_id == location2_id) { 
       break;
     }
 
-    if (visited[current_id]) {
+    if (visited[current_id]) { 
       continue;
     }
 
-    visited[current_id] = true;
+    visited[current_id] = true; 
 
     std::vector<std::string> neighbors = GetNeighborIDs(current_id);
-
+    
     for (auto neighbor : neighbors) {
       double distance_to_neighbor = CalculateDistance(current_id, neighbor);
 
@@ -341,6 +343,46 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Bellman_Ford(
   return path;
 }
 
+void TrojanMap::TravellingTrojan_helper(std::vector<std::string> &location_ids,std::vector<std::vector<double>> &weights,
+    std::vector<std::vector<std::string>> &path,double &minDist,
+    std::vector<int> &currentPath,double currDist,std::unordered_set<int> &seen, bool is_bruteforce)
+{
+
+  // Arrive at the leaf
+  if (currentPath.size() == location_ids.size())
+  {
+    double finalDist = currDist + weights[currentPath.back()][0];
+    if (finalDist < minDist)
+    {
+      std::vector<std::string> tempPath;
+      for (auto i : currentPath)
+        tempPath.push_back(location_ids[i]);
+      tempPath.push_back(location_ids[0]);
+      path.push_back(std::move(tempPath));
+      minDist = finalDist;
+    }
+  }
+
+  // Early proning
+  if (!is_bruteforce){
+    if (currDist >= minDist)
+      return;
+  }
+
+  for (auto i = 1; i < location_ids.size(); i++)
+  {
+    if (seen.count(i) == 0)
+    {
+      seen.insert(i);
+      double deltaDist = weights[currentPath.back()][i];
+      currentPath.push_back(i);
+      TravellingTrojan_helper(location_ids, weights, path, minDist, currentPath, currDist + deltaDist, seen, is_bruteforce);
+      currentPath.pop_back();
+      seen.erase(i);
+    }
+  }
+}
+
 /**
  * Travelling salesman problem: Given a list of locations, return the shortest
  * path which visit all the places and back to the start point.
@@ -349,21 +391,113 @@ std::vector<std::string> TrojanMap::CalculateShortestPath_Bellman_Ford(
  * @return {std::pair<double, std::vector<std::vector<std::string>>} : a pair of total distance and the all the progress to get final path
  */
 std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTrojan_Brute_force(
-                                    std::vector<std::string> location_ids) {
+std::vector<std::string> location_ids) {
+
   std::pair<double, std::vector<std::vector<std::string>>> records;
+  if (location_ids.size() < 2)
+    return records;
+
+  // Initialize a vector to store the distance from start to each node
+  std::vector<std::vector<double>> weight(location_ids.size(), std::vector<double>(location_ids.size()));
+
+  // Initialize a vector to store the optimal path
+  std::vector<std::vector<std::string>> path;
+
+  // Initialize minimum distance
+  double minDist = DBL_MAX;
+
+  // Initialize a vector to store the path
+  std::vector<int> currentPath;
+
+  std::unordered_set<int> seen;
+
+  // Add the start location to the path
+  currentPath.push_back(0);
+
+  seen.insert(0);
+
+  // Initialize the weight vector with the distance from start to each node
+  for (auto i = 0; i < location_ids.size(); i++)
+  {
+    for (auto j = i + 1; j < location_ids.size(); j++)
+    {
+      weight[i][j] = CalculateDistance(location_ids[i], location_ids[j]);
+      weight[j][i] = weight[i][j];
+    }
+  }
+  
+  TravellingTrojan_helper(location_ids, weight, path, minDist, currentPath, 0, seen, true);
+
+  // Update the minimum distance
+  records.first = minDist;
+
+  // Push back optimal path
+  records.second = path;
+
   return records;
 }
 
 std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTrojan_Backtracking(
-                                    std::vector<std::string> location_ids) {
-  std::pair<double, std::vector<std::vector<std::string>>> records;
-  return records;
+    std::vector<std::string> location_ids)
+  {
+    std::pair<double, std::vector<std::vector<std::string>>> records;
+    if (location_ids.size() < 2)
+      return records;
+
+    std::vector<std::vector<double>> weight(location_ids.size(), std::vector<double>(location_ids.size()));
+    for (auto i = 0; i < location_ids.size(); i++)
+    {
+      for (auto j = i + 1; j < location_ids.size(); j++)
+      {
+        weight[i][j] = CalculateDistance(location_ids[i], location_ids[j]);
+        weight[j][i] = weight[i][j];
+      }
+    }
+    std::vector<std::vector<std::string>> paths;
+    double minDist = DBL_MAX;
+    std::vector<int> current_path;
+    std::unordered_set<int> seen;
+    current_path.push_back(0);
+    seen.insert(0);
+
+    TravellingTrojan_helper(location_ids, weight, paths, minDist, current_path, 0, seen, false);
+    return std::pair<double, std::vector<std::vector<std::string>>>(minDist, paths);
 }
 
 std::pair<double, std::vector<std::vector<std::string>>> TrojanMap::TravellingTrojan_2opt(
       std::vector<std::string> location_ids){
+  
   std::pair<double, std::vector<std::vector<std::string>>> records;
-  return records;
+if(location_ids.size()<2) return records;
+
+  std::vector<std::vector<std::string>> allPath;
+  std::vector<std::string> currPath;
+  for(std::string &location:location_ids)
+    currPath.push_back(location);
+  currPath.push_back(location_ids[0]);
+  double minDist = CalculatePathLength(currPath);
+  allPath.push_back(currPath);
+
+  bool stop = false;
+  while(!stop){
+    stop = true;
+    // currPath has at least three nodes
+    for(auto i=1;i<currPath.size()-1;i++){
+      for(auto k=i+1;k<currPath.size();k++){
+        std::reverse(currPath.begin()+i,currPath.begin()+k);
+        double currDist = CalculatePathLength(currPath);
+        if(currDist<minDist){
+          minDist = currDist;
+          allPath.push_back(currPath);
+          stop = false;
+        }else{
+          // Recover the change on the original path
+          std::reverse(currPath.begin()+i,currPath.begin()+k);
+        }
+      }
+    }
+  }
+  return std::pair<double, std::vector<std::vector<std::string>>>(minDist,allPath);
 }
 
 /**
@@ -557,7 +691,6 @@ bool TrojanMap::hasCycle(std::string current_id, std::map<std::string, bool> &vi
  * @return {bool}: whether there is a cycle or not
  */
 bool TrojanMap::CycleDetection(std::vector<std::string> &subgraph, std::vector<double> &square) {
-  bool cycleDetected = false;
   std::map<std::string, bool> visited; //to hold if node is visited
   std::map<std::string, std::string> predecessor; //to hold parent_ids
   
@@ -593,6 +726,32 @@ bool TrojanMap::CycleDetection(std::vector<std::string> &subgraph, std::vector<d
  */
 std::vector<std::string> TrojanMap::FindNearby(std::string attributesName, std::string name, double r, int k) {
   std::vector<std::string> res;
+
+  // ID of the source
+  std::string source = GetID(name);
+  // priority queue to store the distance from the source to the node
+  std::priority_queue<std::pair<double, std::string>, std::vector<std::pair<double, std::string>>, std::greater<std::pair<double, std::string>>> priority_q;
+
+  
+  for (auto &loc: data) {
+    if (loc.first == source) { // Skip the source
+      continue;
+    }
+    if (std::find(loc.second.attributes.begin(), loc.second.attributes.end(), attributesName) != loc.second.attributes.end()) {
+      priority_q.push(std::make_pair(CalculateDistance(source, loc.first), loc.first));
+    }
+  }
+
+  for (int i = 0; i < k; i++) {
+    if (priority_q.empty()) {
+      return res;
+    }
+    std::string id = priority_q.top().second;
+    priority_q.pop();
+    if (CalculateDistance(source, id) <= r) {
+      res.push_back(id);
+    }
+  }
   return res;
 }
 

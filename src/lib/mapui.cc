@@ -1,4 +1,5 @@
 #include "mapui.h"
+#include <curses.h>
 /**
  * PrintMenu: Create the menu
  * 
@@ -237,6 +238,7 @@ void MapUI::PrintMenu() {
     std::cout << menu;
     std::cout << "Time taken by function: " << duration.count()/1000 << " ms" << std::endl << std::endl;
 
+
     PrintMenu();
     break;
   }
@@ -271,7 +273,7 @@ void MapUI::PrintMenu() {
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
+    
     menu = "*************************Results******************************\n";
     std::cout << menu;
     if (results == true)
@@ -596,7 +598,7 @@ void MapUI::PlotPointsLabel(std::vector<std::string> &location_ids, std::string 
  * @param  {std::vector<std::vector<std::string>>} path_progress : the progress to get the path
  */
 void MapUI::CreateAnimation(std::vector<std::vector<std::string>> path_progress, std::string filename){
-  cv::VideoWriter video("src/lib/" + filename, cv::VideoWriter::fourcc('M','J','P','G'), 2, cv::Size(1280,900));
+  cv::VideoWriter video("src/lib/" + filename, cv::VideoWriter::fourcc('M','J','P','G'), 5, cv::Size(1280,900));
   cv::Mat img;
   for(auto location_ids: path_progress) {
     std::string image_path = cv::samples::findFile("src/lib/map.png");
@@ -654,17 +656,25 @@ void MapUI::DynamicPrintMenu() {
   init_pair(2, COLOR_GREEN, COLOR_BLACK);
   init_pair(3, COLOR_YELLOW, COLOR_BLACK);
   init_pair(4, COLOR_BLUE, COLOR_BLACK);
+  init_pair(5, COLOR_MAGENTA, COLOR_BLACK);
+  init_pair(6, COLOR_CYAN, COLOR_BLACK);
+  init_pair(7, COLOR_WHITE, COLOR_BLACK);
+  init_pair(8, COLOR_BLUE, COLOR_BLACK);
 
   std::string menu =
-      "Torjan Map\n"
+      "Trojan Map\n"
       "**************************************************************\n"
       "* Select the function you want to execute.                    \n"
       "* 1. Autocomplete                                             \n"
       "* 2. Find the position                                        \n"
       "* 3. CalculateShortestPath                                    \n"
-      "* 4. Exit                                                     \n"
+      "* 4. Travelling salesman problem                              \n"
+      "* 5. Cycle Detection                                          \n"
+      "* 6. Topological Sort                                         \n"
+      "* 7. Find Nearby                                              \n"
+      "* 8. Exit                                                     \n"
       "**************************************************************\n"
-      "Please select 1 - 4: ";
+      "Please select 1 - 8: ";
   std::string s = menu;
   ui.ScrollLongText(menu);
   char number = getch();
@@ -683,7 +693,7 @@ void MapUI::DynamicPrintMenu() {
     y = ui.ScrollLongText(menu);
     menu = "Please input a partial location:";
     y = ui.ScrollLongText(menu,10,y);
-    scanw("%s",input);
+    getstr(input);
     auto start = std::chrono::high_resolution_clock::now();
     auto results = map.Autocomplete(input);
     auto stop = std::chrono::high_resolution_clock::now();
@@ -714,7 +724,7 @@ void MapUI::DynamicPrintMenu() {
     y = ui.ScrollLongText(menu);
     menu = "Please input a location:";
     y = ui.ScrollLongText(menu,10,y);
-    scanw("%s",input);
+    getstr(input);
     auto start = std::chrono::high_resolution_clock::now();
     auto results = map.GetPosition(input);
     auto stop = std::chrono::high_resolution_clock::now();
@@ -728,6 +738,21 @@ void MapUI::DynamicPrintMenu() {
       PlotPoint(results.first, results.second);
     } else {
       y = ui.ScrollLongText("No matched location.",10,y);
+      std::string tmp = map.FindClosestName(input);
+      menu  = "Did you mean " + tmp + " instead of " + input + "? [y/n]";
+      y = ui.ScrollLongText(menu,10,y);
+      char uu[100];
+      getstr(uu);
+      
+      if (strcmp(uu, "y") == 0) {
+        results = map.GetPosition(tmp);
+
+        menu =  "Latitude: " + std::to_string(results.first)
+                + " Longitude: " + std::to_string(results.second) + "\n";
+
+        y = ui.ScrollLongText(menu,10,y);
+        PlotPoint(results.first, results.second);
+      }
     }
     menu = "**************************************************************\n";
     y=ui.ScrollLongText(menu,10,y);
@@ -746,22 +771,47 @@ void MapUI::DynamicPrintMenu() {
         "**************************************************************\n";
     y = ui.ScrollLongText(menu);
     menu = "Please input the start location:";
+
     y = ui.ScrollLongText(menu, 10, y);
     char input1[100];
-    scanw("%s",input1);
+    getstr(input1);
+
+
     menu = "Please input the destination:";
     y = ui.ScrollLongText(menu, 10, y);
     char input2[100];
-    scanw("%s",input2);
+    getstr(input2);
+
     auto start = std::chrono::high_resolution_clock::now();
     auto results = map.CalculateShortestPath_Dijkstra(input1, input2);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     clear();
+    menu = "*************************Dijkstra*****************************\n";
+    y = ui.ScrollLongText(menu, 10, y);
     menu = "*************************Results******************************";
-    y = ui.ScrollLongText(menu);
+    y = ui.ScrollLongText(menu,10,y);
     if (results.size() != 0) {
       // for (auto x : results) y = ui.ScrollLongText(x, 10, y);
+      y = ui.ScrollLongText("The distance of the path is:" + std::to_string( map.CalculatePathLength(results) ) + " miles", 10, y);
+      PlotPath(results);
+    } else {
+      y = ui.ScrollLongText("No route from the start point to the destination.", 10, y);
+    }
+    menu = "**************************************************************\n";
+    y=ui.ScrollLongText(menu,10,y);
+    y=ui.ScrollLongText("Time taken by function: " + std::to_string(duration.count()/1000) + " ms",10,y);
+
+
+    start = std::chrono::high_resolution_clock::now();
+    results = map.CalculateShortestPath_Bellman_Ford(input1, input2);
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    menu = "*************************Bellman Ford*****************************\n";
+    y = ui.ScrollLongText(menu, 10, y);
+    menu = "*************************Results******************************";
+    y = ui.ScrollLongText(menu, 10, y);
+    if (results.size() != 0) {
       y = ui.ScrollLongText("The distance of the path is:" + std::to_string(map.CalculatePathLength(results)) + " miles", 10, y);
       PlotPath(results);
     } else {
@@ -777,6 +827,299 @@ void MapUI::DynamicPrintMenu() {
     break;
   }
   case '4':
+  {
+    menu =
+        "**************************************************************\n"
+        "* 4. Travelling salesman problem                                    \n"
+        "**************************************************************\n";
+    y = ui.ScrollLongText(menu);
+    menu = "In this task, we will select N random points on the map and you need to find the path to travel these points and back to the start point.";
+    y = ui.ScrollLongText(menu, 10, y);
+
+    menu = "Please input the number of the places:";
+    y = ui.ScrollLongText(menu, 10, y);
+
+    char num1[100];
+    getstr(num1);
+    int num = std::stoi(num1);
+
+    std::vector<std::string> keys;
+    for (auto x : map.data) {
+      keys.push_back(x.first);
+    }
+    std::vector<std::string> locations;
+    srand(time(NULL));
+    for (int i = 0; i < num; i++)
+      locations.push_back(keys[rand() % keys.size()]);
+    PlotPoints(locations);
+
+    for (auto x: locations) {menu = "\"" + x + "\","; y=ui.ScrollLongText(menu,10,y);}
+
+
+
+
+    menu = "\nCalculating ...";
+    y=ui.ScrollLongText(menu,10,y);
+    auto start = std::chrono::high_resolution_clock::now();
+    auto results = map.TravellingTrojan_Brute_force(locations);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    CreateAnimation(results.second, "output0.avi");
+    clear();
+    menu = "*************************Results******************************";
+    y=ui.ScrollLongText(menu,10,y);
+    menu = "TravellingTrojan_Brute_force";
+    y=ui.ScrollLongText(menu,10,y);
+    if (results.second.size() != 0) {std::string menu = "";
+      for (auto x : results.second[results.second.size()-1]) { menu +=  "\"" + x + "\",";}
+      y=ui.ScrollLongText(menu,10,y);
+      menu = "\nThe distance of the path is:" + std::to_string( results.first )+ " miles\n";
+      y=ui.ScrollLongText(menu,10,y);
+      PlotPath(results.second[results.second.size()-1]);
+    } else {
+      menu = "The size of the path is 0";
+      y = ui.ScrollLongText(menu ,10,y);
+    }
+    menu = "**************************************************************\n"
+           "You could find your animation at src/lib/output0.avi.          \n";
+    y=ui.ScrollLongText(menu,10,y);
+    y=ui.ScrollLongText("Time taken by function: " + std::to_string(duration.count()/1000) + " ms",10,y);
+
+    menu = "Calculating ...\n";
+    y=ui.ScrollLongText(menu,10,y);
+
+    start = std::chrono::high_resolution_clock::now();
+    results = map.TravellingTrojan_Backtracking(locations);
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    CreateAnimation(results.second, "output0_backtracking.avi");
+    menu = "*************************Results******************************\n";
+    y=ui.ScrollLongText(menu,10,y);
+    menu = "TravellingTrojan_Backtracking\n";
+    y=ui.ScrollLongText(menu,10,y);
+    if (results.second.size() != 0) {menu = "";
+      for (auto x : results.second[results.second.size()-1]) {menu += "\"" + x + "\",";   }
+      y=ui.ScrollLongText(menu,10,y);
+      menu =  "\nThe distance of the path is:" + std::to_string( results.first) + " miles";
+      y=ui.ScrollLongText(menu,10,y);
+      PlotPath(results.second[results.second.size()-1]);
+    } else {
+      menu =  "The size of the path is 0";
+      y=ui.ScrollLongText(menu,10,y);
+    }
+    menu = "**************************************************************\n"
+           "You could find your animation at src/lib/output0_backtracking.avi.\n";
+    y=ui.ScrollLongText(menu,10,y);
+    menu = "Time taken by function: " + std::to_string( duration.count()/1000 ) + " ms";
+    y=ui.ScrollLongText(menu,10,y);
+
+    menu = "Calculating ...";
+    y=ui.ScrollLongText(menu,10,y);
+
+    start = std::chrono::high_resolution_clock::now();
+    results = map.TravellingTrojan_2opt(locations);
+    stop = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    CreateAnimation(results.second, "output0_2opt.avi");
+    menu = "*************************Results******************************\n";
+    y=ui.ScrollLongText(menu,10,y);
+    menu = "TravellingTrojan_2opt\n";
+    y=ui.ScrollLongText(menu,10,y);
+    if (results.second.size() != 0) {menu = "";
+      for (auto x : results.second[results.second.size()-1]) {menu += "\"" + x + "\",";   }
+      y=ui.ScrollLongText(menu,10,y);
+      menu = "\nThe distance of the path is:" + std::to_string(results.first) + " miles\n";
+      y=ui.ScrollLongText(menu,10,y);
+      PlotPath(results.second[results.second.size()-1]);
+    } else {
+      std::cout << "The size of the path is 0" << std::endl;
+    }
+    menu = "**************************************************************\n"
+           "You could find your animation at src/lib/output0_2opt.avi.     \n";
+    y=ui.ScrollLongText(menu,10,y);
+    menu ="Time taken by function: " + std::to_string( duration.count()/1000) + " ms";
+
+    y=ui.ScrollLongText("Press any keys to continue.",10,y);
+    getchar();
+    clear();
+    DynamicPrintMenu();
+    break;
+  }
+
+  
+  case '5':
+  {
+    menu =
+        "**************************************************************\n"
+        "* 5. Cycle Detection                                          \n"
+        "**************************************************************\n";
+    y = ui.ScrollLongText(menu);
+    menu = "Please input the left bound longitude(between -118.320 and -118.250):";
+    y = ui.ScrollLongText(menu, 10, y);
+
+    std::vector<double> square;
+    char ip1[100];
+    getstr(ip1);
+    square.push_back(atof(ip1));
+
+    menu = "Please input the right bound longitude(between -118.320 and -118.250):";
+    y = ui.ScrollLongText(menu, 10, y);
+
+    char ip2[100];
+    getstr(ip2);
+    square.push_back(atof(ip2));
+
+
+    menu = "Please input the upper bound latitude(between 34.000 and 34.040):";
+    y = ui.ScrollLongText(menu, 10, y);
+
+    char ip3[100];
+    getstr(ip3);
+    square.push_back(atof(ip3));
+
+    menu = "Please input the lower bound latitude(between 34.000 and 34.040)::";
+    y = ui.ScrollLongText(menu, 10, y);
+
+    char ip4[100];
+    getstr(ip4);
+    square.push_back(atof(ip4));
+
+    auto subgraph = map.GetSubgraph(square);
+    PlotPointsandEdges(subgraph, square);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto results = map.CycleDetection(subgraph, square);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    clear();
+    menu = "*************************Results******************************";
+    y = ui.ScrollLongText(menu);
+    if (results == true) {
+      y = ui.ScrollLongText("there exists a cycle in the subgraph ");
+    } else {
+      y = ui.ScrollLongText("there exist no cycle in the subgraph");
+    }
+    menu = "**************************************************************\n";
+    y=ui.ScrollLongText(menu,10,y);
+    y=ui.ScrollLongText("Time taken by function: " + std::to_string(duration.count()/1000) + " ms",10,y);
+    y=ui.ScrollLongText("Press any keys to continue.",10,y);
+    getchar();
+    clear();
+    DynamicPrintMenu();
+    break;
+  }
+
+  case '6':
+  {
+    menu =
+        "**************************************************************\n"
+        "* 6. Topological Sort                                         \n"
+        "**************************************************************\n";
+    y = ui.ScrollLongText(menu);
+    menu = "Please input the locations filename:";
+    y = ui.ScrollLongText(menu, 10, y);
+    char locations_filename[1000];
+    getstr(locations_filename);
+
+    menu = "Please input the dependencies filename:";
+    y = ui.ScrollLongText(menu, 10, y);
+    char dependencies_filename[1000];
+    getstr(dependencies_filename);
+
+    // Read location names from CSV file
+    std::vector<std::string> location_names;
+    if (strcmp(locations_filename,"a") == 0) 
+      location_names = {"Ralphs", "KFC", "Chick-fil-A"};
+    else
+      location_names = map.ReadLocationsFromCSVFile(locations_filename);
+    
+    // Read dependencies from CSV file
+    std::vector<std::vector<std::string>> dependencies;
+    if (strcmp(dependencies_filename,"a") == 0)
+      dependencies = {{"Ralphs","Chick-fil-A"}, {"Ralphs","KFC"}, {"Chick-fil-A","KFC"}};
+    else
+      dependencies = map.ReadDependenciesFromCSVFile(dependencies_filename);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto result = map.DeliveringTrojan(location_names, dependencies);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    clear();
+    menu = "*************************Results******************************\n";
+    y = ui.ScrollLongText(menu);
+    if (result.size() > 0) {
+      y = ui.ScrollLongText( "\nTopological Sorting Results:\n" ,10,y);
+      for (auto x : result) y = ui.ScrollLongText(x, 10, y);
+      std::vector<std::string> node_ids;
+      for (auto x: result) node_ids.push_back(map.GetID(x));
+      PlotPointsOrder(node_ids);
+    } else {
+      y = ui.ScrollLongText("There is no topological sort for the given graph.\n", 10, y);
+    }
+    menu = "\n**************************************************************\n";
+    y=ui.ScrollLongText(menu, 10, y);
+    y=ui.ScrollLongText("Time taken by function: " + std::to_string(duration.count()/1000) + " ms",10,y);
+    y=ui.ScrollLongText("Press any keys to continue.",10,y);
+    getchar();
+    clear();
+    DynamicPrintMenu();
+    break;
+  }
+
+  case '7':
+  {
+    menu =
+        "**************************************************************\n"
+        "* 7. Find Nearby                                              \n"
+        "**************************************************************\n";
+    y = ui.ScrollLongText(menu);
+    menu = "Please input the attribute:";
+    y = ui.ScrollLongText(menu, 10, y);
+    char attribute[100];
+    getstr(attribute);
+
+
+    menu = "Please input the locations:";
+    y = ui.ScrollLongText(menu, 10, y);
+    char origin[100];
+    getstr(origin);
+
+    menu = "Please input radius r:";
+    y = ui.ScrollLongText(menu, 10, y);
+    char r[100];
+    getstr(r);
+
+    menu = "Please input number k:";
+    y = ui.ScrollLongText(menu, 10, y);
+    char k[100];
+    getstr(k);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto results = map.FindNearby(attribute, origin, atoi(r), std::stoi(k));
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    clear();
+    menu = "*************************Results******************************";
+    y = ui.ScrollLongText(menu);
+    y = ui.ScrollLongText("Find Nearby Results:", 10, y);
+    int cnt = 1;
+    for (auto x : results) { 
+      y = ui.ScrollLongText( std::to_string( cnt )+ " " + map.data[x].name, 10, y);
+      cnt++;
+    }
+    PlotPointsLabel(results, map.GetID(origin));
+    menu = "**************************************************************\n";
+    y=ui.ScrollLongText(menu,10,y);
+    y=ui.ScrollLongText("Time taken by function: " + std::to_string(duration.count()/1000) + " ms",10,y);
+    y=ui.ScrollLongText("Press any keys to continue.",10,y);
+    getchar();
+    clear();
+    DynamicPrintMenu();
+    break;
+  }
+
+
+  case '8':
   {
     
     endwin();  // End curses mode

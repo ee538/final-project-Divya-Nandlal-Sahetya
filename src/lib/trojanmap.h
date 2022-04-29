@@ -131,6 +131,9 @@ class TrojanMap {
                         std::vector<std::string> &result);
 
   bool hasCycle(std::string current_id, std::map<std::string, bool> &visited, std::string parent_id, std::vector<double> &square, std::map<std::string, std::string>& predecessor);
+
+  void TravellingTrojan_helper(std::vector<std::string> &location_ids,std::vector<std::vector<double>> &weights,
+    std::vector<std::vector<std::string>> &path,double &minDist, std::vector<int> &currentPath,double currDist,std::unordered_set<int> &seen, bool is_bruteforce);
 };
 
 #endif
