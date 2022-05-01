@@ -238,7 +238,7 @@ void MapUI::PrintMenu() {
     std::cout << menu;
     std::cout << "Time taken by function: " << duration.count()/1000 << " ms" << std::endl << std::endl;
 
-
+    
     PrintMenu();
     break;
   }
@@ -273,7 +273,7 @@ void MapUI::PrintMenu() {
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    
+
     menu = "*************************Results******************************\n";
     std::cout << menu;
     if (results == true)
@@ -704,7 +704,7 @@ void MapUI::DynamicPrintMenu() {
     if (results.size() != 0) {
       for (auto x : results) y = ui.ScrollLongText(x,10,y);
     } else {
-      ui.ScrollLongText("No matched locations./n",10,y);
+      y = ui.ScrollLongText("No matched locations.\n",10,y);
     }
     menu = "**************************************************************\n";
     y=ui.ScrollLongText(menu,10,y);
@@ -938,7 +938,7 @@ void MapUI::DynamicPrintMenu() {
            "You could find your animation at src/lib/output0_2opt.avi.     \n";
     y=ui.ScrollLongText(menu,10,y);
     menu ="Time taken by function: " + std::to_string( duration.count()/1000) + " ms";
-
+    y=ui.ScrollLongText(menu,10,y);
     y=ui.ScrollLongText("Press any keys to continue.",10,y);
     getchar();
     clear();
