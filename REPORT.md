@@ -294,16 +294,27 @@ On a MacBook Pro laptop with M1 processor, the function takes 5 ms.
 ## Runtime of all implemented functionalities
 
 Autocomplete:                   O(n)
+
 Finding the Position:           O(n)
+
 Calculate the Shortest Path: 
+
 Dijkstra:                       O(n^2)
+
 Bellman Ford:                   O(n*m)
+
 Travelling Trojan (TSP)
+
 Brute Force:                    O(n!)
+
 Backtracking:                   O(n!)
+
 2 - Opt:                        O(n^2)
+
 Cycle Detection:                O(n+m)
+
 Topological Sort:               O(n+m)
+
 Find Nearby:                    O(n^2)
 
 where, n: Number of nodes in the map, m: Number of edges in the map
